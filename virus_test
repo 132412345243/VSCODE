@@ -1,0 +1,49 @@
+import requests
+import os
+import gradio as gr
+def scanFile(file_path):
+    url = 'https://www.virustotal.com/vtapi/v2/file/scan'
+    params = {'apikey': '453af95ed16995efc1d0894c5df35a4e9374de3792225c4a48f46c1f484afbb7'}
+    files = {'file': (file_path, open(file_path, 'rb'))}
+    response = requests.post(url, files=files, params=params)
+    response_json = response.json()
+    if response.status_code != 200:
+        print("Error submitting file for scanning")
+    
+    sha256 = response_json['sha256']
+    url = "https://www.virustotal.com/vtapi/v2/file/report"
+    params = {'apikey': '453af95ed16995efc1d0894c5df35a4e9374de3792225c4a48f46c1f484afbb7', 'resource':sha256}
+    response1 = requests.get(url, params=params)
+    data = response1.json()
+
+    try:
+        countpos = 0
+        counttotal = 0
+        for i in data['scans']:
+            counttotal += 1
+            if(data['scans'][i]['detected'] == True):
+                countpos += 1
+        print( f'{countpos} sources out of {counttotal} found ' + os.path.basename(file_path) + ' malicious') 
+    except KeyError:
+        print("The file couldn't be scanned")
+def getFiles(path):
+    for filename in os.listdir(path):
+        print("--" + filename)
+        fullname = os.path.join(path, filename)
+        if os.path.isdir(fullname): 
+            getFiles(fullname)
+        else:
+            scanFile(fullname) 
+def dir_or_file(path):
+    if os.path.isfile(path):
+        scanFile(path)
+    if os.path.isdir(path):
+        getFiles(path)
+dir_or_file(r"C:\Users\Lenovo\Documents\Diabetes prediction with KNN.docx")
+demo = gr.Interface(
+    fn = dir_or_file,
+    inputs = gr.Textbox(placeholder=('Link(with r" before and close the brackets at the end)')),
+    outputs = "text",
+)
+
+demo.launch(share=True)
