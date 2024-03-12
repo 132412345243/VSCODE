@@ -1,17 +1,16 @@
-from http.server import HTTPServer, BaseHTTPRequestHandler
+import socket
 
-class helloHandler(BaseHTTPRequestHandler):
-    def do_get(self):
-        self.send_response(200)
-        self.send_header('content-type','text/html')
-        self.end_headers()
-        self.wfile.write('Hello ariel'.encode())
+HOST = "127.0.0.1"  
+PORT = 65432  
 
-def main():
-    port = 8000
-    server = HTTPServer(('',port),helloHandler)
-    print ('server running on port %s'%port)
-    server.serve_forever()
-
-if __name__ == '__main__':
-    main()
+with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+    s.bind((HOST, PORT))
+    s.listen()
+    conn, addr = s.accept()
+    with conn:
+        print(f"Connected by {addr}")
+        while True:
+            data = conn.recv(1024)
+            if not data:
+                break
+            conn.sendall(data)
